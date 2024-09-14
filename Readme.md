@@ -33,6 +33,7 @@ Install the core packages, ensuring versions match your `pip freeze` output.
 git clone <this repo>
 # Upgrade pip
 cd <this repo>
+pip install torch==2.3.0 #need to install before the other requirements
 pip install -r requirements.txt
 ```
 
@@ -100,7 +101,18 @@ ngrok config add-authtoken YOUR_NGROK_AUTHTOKEN
 
 Replace `YOUR_NGROK_AUTHTOKEN` with your actual ngrok authtoken.
 
-### **5. Start the vLLM OpenAI-Compatible API Server**
+### **5. Start the FastAPI Server**
+
+```bash
+cd <path_to_repo>
+# Run the FastAPI application
+CUDA_VISIBLE_DEVICES=7 python hybrid_pipeline2.py
+```
+
+Note: Make sure to use different CUDA_VISIBLE_DEVICES for the FastAPI server and the vLLM server to avoid GPU conflicts. For example, if you're using GPU 7 for the FastAPI server, use GPUs 0-3 for vLLM as shown in step 6.
+
+
+### **6. Start the vLLM OpenAI-Compatible API Server**
 
 Launch the vLLM server with your desired model. Replace the model path with the one you intend to use.
 
@@ -111,24 +123,18 @@ Remember to leave the first GPU to run the RAG model.
 ray disable-usage-stats
 ray start --head --num-cpus=32 --num-gpus=4 --disable-usage-stats
 # Start vLLM server (adjust CUDA devices and model as needed)
-CUDA_VISIBLE_DEVICES=4,5,6,7 python -m vllm.entrypoints.openai.api_server \
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m vllm.entrypoints.openai.api_server \
     --model /new_data/experiments/ss-bnp-p10/hf_format/samples_2795520 \
     --dtype float16 \
     --tensor-parallel-size 4 \
     --gpu-memory-utilization 0.9
 ```
 
-**Note:** Adjust `CUDA_VISIBLE_DEVICES`, `--tensor-parallel-size`, and other parameters based on your hardware.
+- **Important:** Wait until vLLM is fully serving the model before proceeding to the next steps.
+- Adjust `CUDA_VISIBLE_DEVICES`, `--tensor-parallel-size`, and other parameters based on your specific hardware configuration.
+- The `--model` path should point to the directory containing the model files.
+- Ensure that vLLM is serving the model on localhost:8000, as the FastAPI server expects this configuration.
 
-**Note:** The `--model` path should point to the directory containing the model files.
-
-### **6. Start the FastAPI Server**
-
-```bash
-cd <path_to_repo>
-# Run the FastAPI application
-python hybrid_pipeline2.py
-```
 
 ### **7. Start the Streamlit Application**
 
@@ -136,6 +142,7 @@ Run your Streamlit application.
 
 ```bash
 # Run the Streamlit app
+cd <path_to_repo>
 streamlit run streamlit_front.py
 ```
 
