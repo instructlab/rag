@@ -76,7 +76,7 @@ reranker = FlagEmbeddingReranker(model="BAAI/bge-reranker-v2-m3", top_n=10)
 # Load and index documents
 if RELOAD_DOCS:
     docs = reader.load_data(file_path=FILE_PATHS)
-    from IPython import embed; embed(header="check docs")
+    # from IPython import embed; embed(header="check docs")
     # print(docs)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     index = VectorStoreIndex.from_documents(
@@ -90,9 +90,7 @@ else:
             vector_store,
             embed_model=embed_model,
         )
-    
-from IPython import embed; embed(header="check index")
-    
+
 app = FastAPI()
 
 class Query(BaseModel):
@@ -159,11 +157,29 @@ async def get_response(query: Query):
         "Answer:\n"
         "<|assistant|>\n"
     )
+    refine_template = (
+        "<|system|>\n"
+        "You are an AI language model developed by IBM Research. You are a cautious assistant. You carefully follow instructions. You are helpful and harmless, and you follow ethical guidelines and promote positive behavior.\n"
+        "<|user|>\n"
+        "The original query is as follows: {query_str}\n"
+        "We have provided an existing answer: {existing_answer}\n"
+        "We have the opportunity to refine the existing answer "
+        "(only if needed) with some more context below.\n"
+        "------------\n"
+        "{context_msg}\n"
+        "------------\n"
+        "Given the new context, refine the original answer to better "
+        "answer the query. "
+        "If the context isn't useful, return the original answer.\n"
+        "Refined Answer:\n"
+        "<|assistant|>\n"
+)
     query_engine = index.as_query_engine(
         llm=llm,
         similarity_top_k=5,
         node_postprocessors=[reranker],
         text_qa_template=PromptTemplate(text_qa_template),
+        refine_template=PromptTemplate(refine_template),
         vector_store_query_mode=vector_store_query_mode,
         response_mode=ResponseMode.REFINE,
     )
