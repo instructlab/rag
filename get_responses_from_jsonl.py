@@ -23,9 +23,9 @@ from langchain_openai import ChatOpenAI, OpenAI
 from fastapi import FastAPI
 from pydantic import BaseModel
 import json
-from scoring_prompt import scoring_prompt_a, scoring_prompt_b
+# from scoring_prompt import scoring_prompt_a, scoring_prompt_b
 from langchain_core.prompts import ChatPromptTemplate
-
+import click
 
 
 # Constants
@@ -38,7 +38,7 @@ HF_API_KEY = "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"
 
 # Check if milvus_demo.db exists
 MILVUS_DB_PATH = "/home/lab/milvus_demo.db"
-RELOAD_DOCS = False
+RELOAD_DOCS = True
 RELOAD_DOCS = not os.path.exists(MILVUS_DB_PATH) or RELOAD_DOCS
 
 # PDFs to load
@@ -152,7 +152,7 @@ async def get_response(query: Query):
     print(f"\033[92mResponse from {LLM} for question '{query_str}':\033[0m\n{query_res}")
     return {"response": query_res.response}
 
-async def main(questions_jsonl: Path):
+async def main_(questions_jsonl: Path):
     # Read the JSONL file
     with open(questions_jsonl, 'r') as file:
         questions = [json.loads(line) for line in file]
@@ -173,18 +173,40 @@ async def main(questions_jsonl: Path):
 
     return questions
 
-
-if __name__ == "__main__":
-    results = asyncio.run(main("/new_data/aldo/rag/rag_questions.jsonl"))
-    # Save results to the same JSONL file
-    output_file = "/new_data/aldo/rag/rag_questions_with_responses.jsonl"
-    with open(output_file, 'w') as file:
+@click.command()
+@click.option(
+    "--dataset-path",
+    help="Evaluation Dataset Path",
+    required=True,
+    type=click.Path(exists=True),
+)
+@click.option(
+    "--output-path",
+    help="Evaluation Dataset Path",
+    required=True,
+    type=click.Path(exists=True),
+)
+def main(dataset_path, output_path):
+    results = asyncio.run(main_(dataset_path))
+    with open(output_path, 'w') as file:
         for item in results:
             json.dump(item, file)
             file.write('\n')
     
-    print(f"Results saved to {output_file}")
-    # print("\033[92mClaude Response Full Context:\033[0m")
-    # print("According to the financial statements provided, BNP Paribas Group's net income attributable to equity holders for the first half of 2024 was 6,498 million euros, compared to 7,245 million euros for the first half of 2023.")
-    from IPython import embed; embed(header="select LLM between 'claude' and 'mixtral' and run get_response(LLM)")
-    # uvicorn.run(app, host="0.0.0.0", port=8001)
+    print(f"Results saved to {output_path}")
+
+if __name__ == "__main__":
+    main()
+    # results = asyncio.run(main("/new_data/aldo/rag/rag_questions.jsonl"))
+    # # Save results to the same JSONL file
+    # output_file = "/new_data/aldo/rag/rag_questions_with_responses.jsonl"
+    # with open(output_file, 'w') as file:
+    #     for item in results:
+    #         json.dump(item, file)
+    #         file.write('\n')
+    
+    # print(f"Results saved to {output_file}")
+    # # print("\033[92mClaude Response Full Context:\033[0m")
+    # # print("According to the financial statements provided, BNP Paribas Group's net income attributable to equity holders for the first half of 2024 was 6,498 million euros, compared to 7,245 million euros for the first half of 2023.")
+    # from IPython import embed; embed(header="select LLM between 'claude' and 'mixtral' and run get_response(LLM)")
+    # # uvicorn.run(app, host="0.0.0.0", port=8001)
