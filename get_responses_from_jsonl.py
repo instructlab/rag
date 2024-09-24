@@ -130,19 +130,42 @@ async def get_response(query: Query):
         raise ValueError(f"LLM {LLM} not supported")
 
     # Query engine setup
-    text_qa_template = """Context information is below.
-    ---------------------
-    {context_str}
-    ---------------------
-    Given the context information, answer the query.
-    Query: {query_str}
-    Answer:
-    """
+    text_qa_template = (
+        "<|system|>\n"
+        "You are an AI language model developed by IBM Research. You are a cautious assistant. You carefully follow instructions. You are helpful and harmless, and you follow ethical guidelines and promote positive behavior.\n"
+        "<|user|>\n"
+        "Context information is below.\n"
+        "---------------------\n"
+        "{context_str}\n"
+        "---------------------\n"
+        "Given the context information, answer the query.\n"
+        "Query: {query_str}\n"
+        "Answer:\n"
+        "<|assistant|>\n"
+    )
+    refine_template = (
+        "<|system|>\n"
+        "You are an AI language model developed by IBM Research. You are a cautious assistant. You carefully follow instructions. You are helpful and harmless, and you follow ethical guidelines and promote positive behavior.\n"
+        "<|user|>\n"
+        "The original query is as follows: {query_str}\n"
+        "We have provided an existing answer: {existing_answer}\n"
+        "We have the opportunity to refine the existing answer "
+        "(only if needed) with some more context below.\n"
+        "------------\n"
+        "{context_msg}\n"
+        "------------\n"
+        "Given the new context, refine the original answer to better "
+        "answer the query. "
+        "If the context isn't useful, return the original answer.\n"
+        "Refined Answer:\n"
+        "<|assistant|>\n"
+)
     query_engine = index.as_query_engine(
         llm=llm,
         similarity_top_k=5,
         node_postprocessors=[reranker],
         text_qa_template=PromptTemplate(text_qa_template),
+        refine_template=PromptTemplate(refine_template),
         vector_store_query_mode=vector_store_query_mode,
         response_mode=ResponseMode.REFINE,
     )
