@@ -20,6 +20,7 @@ from llama_index.core import PromptTemplate
 from llama_index.core.response_synthesizers.type import ResponseMode
 from llama_index.llms.langchain import LangChainLLM
 from langchain_openai import ChatOpenAI, OpenAI
+from openai import OpenAI as OpenAI_og
 from fastapi import FastAPI
 from pydantic import BaseModel
 import json
@@ -38,7 +39,7 @@ HF_API_KEY = "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"
 
 # Check if milvus_demo.db exists
 MILVUS_DB_PATH = "/home/lab/milvus_demo.db"
-RELOAD_DOCS = True
+RELOAD_DOCS = False
 RELOAD_DOCS = not os.path.exists(MILVUS_DB_PATH) or RELOAD_DOCS
 
 # PDFs to load
@@ -76,7 +77,7 @@ reranker = FlagEmbeddingReranker(model="BAAI/bge-reranker-v2-m3", top_n=10)
 # Load and index documents
 if RELOAD_DOCS:
     docs = reader.load_data(file_path=FILE_PATHS)
-    from IPython import embed; embed(header="check docs")
+    # from IPython import embed; embed(header="check docs")
     # print(docs)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     index = VectorStoreIndex.from_documents(
@@ -118,12 +119,21 @@ async def get_response(query: Query):
             model="claude-3-5-sonnet-20240620",
         )
     elif LLM == "granite":
-        llm = ChatOpenAI(
-                openai_api_base=f"http://localhost:8000/v1",
+        openai_api_base = f"http://localhost:8000/v1"
+        openai_api_key = "EMPTY"
+        client = OpenAI_og(
+        api_key=openai_api_key,
+        base_url=openai_api_base,
+        )       
+        models = client.models.list()
+        model = models.data[0].id
+        print(f"Find model {model}")        
+        llm = OpenAI(
+                openai_api_base=openai_api_base,
                 # openai_api_base=f"https://cf47-52-117-121-50.ngrok-free.app/v1",
-                model="/new_data/experiments/ss-bnp-p10/hf_format/samples_2795520",
+                model=model,
                 temperature=0.0,
-                timeout=1200,
+                timeout=600,
             )
         llm = LangChainLLM(llm)
     else:
@@ -198,16 +208,16 @@ async def main_(questions_jsonl: Path):
 
 @click.command()
 @click.option(
-    "--dataset-path",
+    "--dataset_path",
     help="Evaluation Dataset Path",
     required=True,
     type=click.Path(exists=True),
 )
 @click.option(
-    "--output-path",
+    "--output_path",
     help="Evaluation Dataset Path",
     required=True,
-    type=click.Path(exists=True),
+    type=click.Path(),
 )
 def main(dataset_path, output_path):
     results = asyncio.run(main_(dataset_path))
