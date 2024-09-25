@@ -8,6 +8,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
 
+from dotenv import load_dotenv
+
 from llama_index.llms.anthropic import Anthropic
 from llama_index.core import PromptTemplate
 from llama_index.core.response_synthesizers.type import ResponseMode
@@ -29,10 +31,14 @@ reranker: Optional[FlagEmbeddingReranker] = None
 index = None
 
 
+
+load_dotenv()
+
+
 @cli.command()
 def run_server(
     milvus_db_path: str = typer.Option(
-        "/home/lab/milvus_demo.db", help="Path to the Milvus database"
+        "milvus_demo.db", help="Path to the Milvus database"
     ),
     collection_name: str = typer.Option(
         "hybrid_pipeline", help="Name of the collection"
