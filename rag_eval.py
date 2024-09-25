@@ -17,7 +17,7 @@ app = typer.Typer()
 
 async def fetch_response(client, llm, query_str, api_url="http://localhost:8001"):
     response = await client.post(
-        f"{api_url}/get_response", 
+        f"{api_url}/get_response",
         json={"llm": llm, "query_str": query_str},
         timeout=600,
     )
@@ -75,7 +75,7 @@ def generate_responses(
 
 def score(answer: str, model_1="System A"):
     if answer not in ["System A", "System B", "EQUAL"]:
-        return float('NaN')
+        return float("NaN")
     if answer == model_1:
         return 1.0
     elif answer == "EQUAL":
@@ -93,10 +93,12 @@ def evaluate_responses(
         "rag_with_responses_and_scores.jsonl", help="Output file with scores"
     ),
     model_0_key: str = typer.Option(
-        "agent_rag_granite", help="Key for the responses of the model that is preferred when the mean score is closer to 0 in the input file"
+        "agent_rag_granite",
+        help="Key for the responses of the model that is preferred when the mean score is closer to 0 in the input file",
     ),
     model_1_key: str = typer.Option(
-        "agent_rag_openai", help="Key for the responses of the model that is preferred when the mean score is closer to 1 in the input file"
+        "agent_rag_openai",
+        help="Key for the responses of the model that is preferred when the mean score is closer to 1 in the input file",
     ),
 ):
     print("\033[92mStarting evaluation of responses.\033[0m")
@@ -119,8 +121,8 @@ def evaluate_responses(
     )
 
     # Create the prompt templates
-    prompt_a = ChatPromptTemplate.from_template(SCORING_PROMPT_A) # model A is granite
-    prompt_b = ChatPromptTemplate.from_template(SCORING_PROMPT_B) # model B is granite
+    prompt_a = ChatPromptTemplate.from_template(SCORING_PROMPT_A)  # model A is granite
+    prompt_b = ChatPromptTemplate.from_template(SCORING_PROMPT_B)  # model B is granite
 
     # Create the chains
     chain_a = prompt_a | model
@@ -147,13 +149,13 @@ def evaluate_responses(
         questions[i]["judgement_when_model_0_is_system_A"] = result_a.content
         questions[i]["judgement_when_model_0_is_system_B"] = result_b.content
         questions[i]["avg_gpt4_based_judgement"] = avg_score
-    
+
     # Save results
     with open(output_file, "w", encoding="utf-8") as file:
         for item in questions:
             json.dump(item, file)
             file.write("\n")
-    
+
     scores = np.array([q["avg_gpt4_based_judgement"] for q in questions])
     mean_score = np.nanmean(scores) if scores.size else 0
     nan_count = np.isnan(scores).sum()
@@ -162,11 +164,17 @@ def evaluate_responses(
     print("\033[96mgpt4 as a judge scores (average between positions):\033[0m", scores)
     print("\033[93mExplanation of scores:\033[0m")
     print("\033[93m- Score 1: Both evaluations favored Model 1.\033[0m")
-    print("\033[93m- Score 0.75: One evaluation favored Model 1, the other found both models equal.\033[0m")
+    print(
+        "\033[93m- Score 0.75: One evaluation favored Model 1, the other found both models equal.\033[0m"
+    )
     print("\033[93m- Score 0.5: Evaluations found models equal or disagreed.\033[0m")
-    print("\033[93m- Score 0.25: One evaluation favored Model 0, the other found both models equal.\033[0m")
+    print(
+        "\033[93m- Score 0.25: One evaluation favored Model 0, the other found both models equal.\033[0m"
+    )
     print("\033[93m- Score 0: Both evaluations favored Model 0.\033[0m")
-    print("\033[93mNote: Evaluations are done twice to account for positional bias.\033[0m")
+    print(
+        "\033[93mNote: Evaluations are done twice to account for positional bias.\033[0m"
+    )
     print("\033[96mMean of gpt4 judge scores:\033[0m", mean_score)
     print("\033[93m- Mean score closer to 0: Preference for Model 0.\033[0m")
     print("\033[93m- Mean score closer to 1: Preference for Model 1.\033[0m")

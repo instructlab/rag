@@ -31,7 +31,6 @@ reranker: Optional[FlagEmbeddingReranker] = None
 index = None
 
 
-
 load_dotenv()
 
 
@@ -124,6 +123,7 @@ async def get_response(query: Query):
     )
     return query_res.response  # Return just the response string
 
+
 @app.post("/get_response")
 async def get_response_endpoint(query: Query):
     try:
@@ -131,23 +131,29 @@ async def get_response_endpoint(query: Query):
         return JSONResponse(content={"response": response})
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+
 import inspect
+
 
 def print_calling_line():
     frame = inspect.currentframe().f_back
     filename = frame.f_code.co_filename
     lineno = frame.f_lineno
     function_name = frame.f_code.co_name
-    print(f"\033[91mFunction '{function_name}' called from {filename}, line {lineno}\033[0m")
+    print(
+        f"\033[91mFunction '{function_name}' called from {filename}, line {lineno}\033[0m"
+    )
+
 
 def debug_get_response(query: Query):
     global reranker
     reranker = FlagEmbeddingReranker(model="BAAI/bge-reranker-v2-m3", top_n=10)
     global index
-    
+
     index = create_index(
         milvus_db_path="/home/lab/milvus_demo.db",
         collection_name="hybrid_pipeline",
@@ -164,7 +170,6 @@ def debug_get_response(query: Query):
         f"\033[92mResponse from {languageModel} for question:\033[0m \033[95m'{query_str}'\033[0m\n\033[0m{query_res}\033[0m"
     )
     return query_res.response  # Return just the response string
-
 
 
 if __name__ == "__main__":

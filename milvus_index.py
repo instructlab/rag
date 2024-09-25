@@ -43,7 +43,7 @@ def create_index(
     )
 
     if reload_docs:
-        
+
         docs = reader.load_data(file_path=list(file_paths))
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
         index = VectorStoreIndex.from_documents(
