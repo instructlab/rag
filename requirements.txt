@@ -1,6 +1,6 @@
 vllm==0.4.3
 flash-attn==2.5.8
-transformers==4.44.2
+transformers==4.48.0
 langchain>=0.2.16
 langchain-openai>=0.1.25
 langchain-community>=0.2.17
